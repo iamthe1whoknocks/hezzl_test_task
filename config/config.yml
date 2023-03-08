@@ -1,0 +1,13 @@
+app:
+  name: 'hezzl_task5'
+  version: '1.0.0'
+
+http:
+  port: '8080'
+
+logger:
+  log_level: 'debug'
+
+postgres:
+  pool_max: 2
+  pg_url: "postgres://user:pass@localhost:5432/postgres" ## move to env

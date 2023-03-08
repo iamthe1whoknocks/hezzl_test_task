@@ -1,0 +1,30 @@
+version: '3.3'
+services:
+
+  postgres:
+    container_name: postgres
+    image: postgres
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: 'user'
+      POSTGRES_PASSWORD: 'pass'
+      POSTGRES_DB: 'postgres'
+    ports:
+      - 5432:5432
+    network_mode: host
+    
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: app
+    environment:
+      PG_URL: 'postgres://user:pass@postgres:5432/postgres'
+    ports:
+      - 8080:8080
+    depends_on:
+      - postgres
+    network_mode: host
+volumes:
+    pg-data:
