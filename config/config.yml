@@ -10,4 +10,11 @@ logger:
 
 postgres:
   pool_max: 2
-  pg_url: "postgres://user:pass@localhost:5432/postgres" ## move to env
+  pg_url: 'postgres://user:pass@localhost:5432/postgres' ## move to env
+
+clickhouse:
+  ch_host: 'localhost'
+  ch_port: '8123'
+  db_name: 'hezzl'
+  username: 'default' ## move to env
+  password: 'default' ## move to env

@@ -11,6 +11,7 @@ import (
 	"github.com/hezzl_task5/internal/logger"
 	"github.com/hezzl_task5/internal/usecase"
 	"github.com/hezzl_task5/internal/usecase/repo"
+	"github.com/hezzl_task5/pkg/clickhouse"
 	"github.com/hezzl_task5/pkg/httpserver"
 	"github.com/hezzl_task5/pkg/postgres"
 	"go.uber.org/zap"
@@ -20,16 +21,28 @@ import (
 func Run(cfg *config.Config) {
 	l := logger.Set(cfg.Log.Level)
 
-	// Repository
+	// postgres
 	pg, err := postgres.New(cfg.PG.URL)
 	if err != nil {
 		l.L.Sugar().Fatalf("app - Run - postgres.New: %w", err)
 	}
 	defer pg.Pool.Close()
 
-	err = migratePostgres(l, cfg.PG.URL)
+	err = migratePostgres(cfg.PG.URL, l)
 	if err != nil {
 		l.L.Fatal("app - Run - migratePostgres", zap.Error(err))
+	}
+
+	// clickhouse
+	ch, err := clickhouse.New(&cfg.ClickHouse)
+	if err != nil {
+		l.L.Sugar().Fatalf("app - Run - clickhouse.New: %w", err)
+	}
+	defer ch.Conn.Close()
+
+	err = migrateClickhouse(&cfg.ClickHouse, l)
+	if err != nil {
+		l.L.Fatal("app - Run - migrateClickHouse", zap.Error(err))
 	}
 
 	// Use case

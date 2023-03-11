@@ -1,6 +1,6 @@
 version: '3.3'
 services:
-
+  
   postgres:
     container_name: postgres
     image: postgres
@@ -13,7 +13,14 @@ services:
     ports:
       - 5432:5432
     network_mode: host
-    
+  
+  clickhouse:
+      image: yandex/clickhouse-server
+      ports:
+      - "8123:8123"
+      volumes:
+      - ./db:/var/lib/clickhouse
+      network_mode: host
   app:
     build:
       context: .

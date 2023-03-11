@@ -45,3 +45,7 @@ func (r *ItemsRepo) GetItems(ctx context.Context) ([]models.Item, error) {
 	}
 	return items, nil
 }
+
+func (r *ItemsRepo) SaveItem(ctx context.Context, name string) (models.Item, error) {
+	sql, _, err := r.Builder.Insert("items").Columns("")
+}

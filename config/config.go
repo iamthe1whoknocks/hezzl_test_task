@@ -9,10 +9,11 @@ import (
 type (
 	// Config -.
 	Config struct {
-		App  `yaml:"app"`
-		HTTP `yaml:"http"`
-		Log  `yaml:"logger"`
-		PG   `yaml:"postgres"`
+		App        `yaml:"app"`
+		HTTP       `yaml:"http"`
+		Log        `yaml:"logger"`
+		PG         `yaml:"postgres"`
+		ClickHouse `yaml:"clickhouse"`
 	}
 
 	// app
@@ -35,6 +36,14 @@ type (
 	PG struct {
 		PoolMax int    `yaml:"pool_max"`
 		URL     string `yaml:"pg_url"`
+	}
+	// clickhouse
+	ClickHouse struct {
+		Host     string `yaml:"ch_host"`
+		Port     string `yaml:"ch_port"`
+		DbName   string `yaml:"db_name"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
 	}
 )
 
