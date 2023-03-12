@@ -45,6 +45,7 @@ func (r *ItemsRoutes) get(c *gin.Context) {
 			errorResponse(c, http.StatusInternalServerError, "internal error")
 			return
 		}
+		r.l.L.Debug("http - get - got from cache")
 		c.JSON(http.StatusOK, items)
 		return
 	}
@@ -75,7 +76,7 @@ func (r *ItemsRoutes) get(c *gin.Context) {
 		errorResponse(c, http.StatusInternalServerError, "internal error")
 		return
 	}
-
+	r.l.L.Debug("http - get - got from db")
 	c.JSON(http.StatusOK, items)
 }
 
