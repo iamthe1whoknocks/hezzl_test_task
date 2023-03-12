@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/iamthe1whoknocks/hezzl_test_task/config"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/cache"
 	handlers "github.com/iamthe1whoknocks/hezzl_test_task/internal/handlers/http"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/logger"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase"
@@ -62,6 +63,7 @@ func Run(cfg *config.Config) {
 	// Use case
 	ItemsUseCase := usecase.New(
 		repo.New(pg, l.L),
+		cache.New(redis.Client, &cfg.Redis),
 	)
 
 	// HTTP Server

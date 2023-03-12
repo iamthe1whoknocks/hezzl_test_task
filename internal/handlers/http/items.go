@@ -11,6 +11,7 @@ import (
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase"
 	"github.com/jackc/pgx/v4"
+	"github.com/vmihailenco/msgpack/v5"
 	"go.uber.org/zap"
 )
 
@@ -33,6 +34,21 @@ func newItemRoutes(handler *gin.RouterGroup, t usecase.Item, l *logger.Logger) {
 
 // get handler
 func (r *ItemsRoutes) get(c *gin.Context) {
+
+	// find items in cache
+	b, err := r.i.GetCache(c.Request.Context(), "get")
+	if err == nil && b != nil {
+		items := make([]models.Item, 0)
+		err = msgpack.Unmarshal(b, &items)
+		if err != nil {
+			r.l.L.Error("http  - get - SetCache", zap.Error(err))
+			errorResponse(c, http.StatusInternalServerError, "internal error")
+			return
+		}
+		c.JSON(http.StatusOK, items)
+		return
+	}
+
 	items, err := r.i.Get(c.Request.Context())
 	if err != nil {
 		r.l.L.Error("http  - get", zap.Error(err))
@@ -42,6 +58,21 @@ func (r *ItemsRoutes) get(c *gin.Context) {
 
 	if len(items) == 0 {
 		c.JSON(http.StatusOK, "items list is empty")
+		return
+	}
+
+	b, err = msgpack.Marshal(items)
+	if err != nil {
+		r.l.L.Error("http  - get - msgpack.Marshal", zap.Error(err))
+		errorResponse(c, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	// key is the same because our get method lists all items, not by one
+	err = r.i.SetCache(c.Request.Context(), "get", b)
+	if err != nil {
+		r.l.L.Error("http  - get - SetCache", zap.Error(err))
+		errorResponse(c, http.StatusInternalServerError, "internal error")
 		return
 	}
 
@@ -96,6 +127,13 @@ func (r *ItemsRoutes) post(c *gin.Context) {
 		return
 	}
 
+	err = r.i.InvalidateCache(c.Request.Context(), "get")
+	if err != nil {
+		r.l.L.Error("http  - post - r.i.InvalidateCache", zap.Error(err))
+		errorResponse(c, http.StatusInternalServerError, "internal error")
+		return
+	}
+
 	c.JSON(http.StatusOK, item)
 }
 
@@ -134,6 +172,13 @@ func (r *ItemsRoutes) delete(c *gin.Context) {
 			errorResponse(c, http.StatusInternalServerError, "internal error")
 			return
 		}
+	}
+
+	err = r.i.InvalidateCache(c.Request.Context(), "get")
+	if err != nil {
+		r.l.L.Error("http  - delete - r.i.InvalidateCache", zap.Error(err))
+		errorResponse(c, http.StatusInternalServerError, "internal error")
+		return
 	}
 
 	c.JSON(http.StatusOK, deleteResponse{
@@ -207,6 +252,13 @@ func (r *ItemsRoutes) update(c *gin.Context) {
 			return
 		}
 
+	}
+
+	err = r.i.InvalidateCache(c.Request.Context(), "get")
+	if err != nil {
+		r.l.L.Error("http  - update - r.i.InvalidateCache", zap.Error(err))
+		errorResponse(c, http.StatusInternalServerError, "internal error")
+		return
 	}
 
 	c.JSON(http.StatusOK, item)

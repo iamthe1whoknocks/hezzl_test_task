@@ -53,6 +53,8 @@ type (
 		Host     string `yaml:"redis_host"`
 		Port     string `yaml:"redis_port"`
 		Password string `yaml:"redis_password"`
+		DB       int    `yaml:"redis_db"`
+		TTL      int    `yaml:"redis_ttl"`
 	}
 )
 

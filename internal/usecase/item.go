@@ -9,12 +9,14 @@ import (
 )
 
 type ItemUseCase struct {
-	repo repo.ItemsRepo
+	repo  repo.ItemsRepo
+	cache Cacher
 }
 
-func New(r repo.ItemsRepo) *ItemUseCase {
+func New(r repo.ItemsRepo, c Cacher) *ItemUseCase {
 	return &ItemUseCase{
-		repo: r,
+		repo:  r,
+		cache: c,
 	}
 }
 
@@ -48,4 +50,28 @@ func (iu *ItemUseCase) Update(ctx context.Context, item *models.Item) (*models.I
 		return nil, fmt.Errorf("ItemsUseCase - Save - iu.repo.SaveItem : %w", err)
 	}
 	return item, nil
+}
+
+func (iu *ItemUseCase) SetCache(ctx context.Context, key string, value []byte) error {
+	err := iu.cache.Set(ctx, key, value)
+	if err != nil {
+		return fmt.Errorf("ItemsUseCase - SetCache - iu.cache.Set: %w", err)
+	}
+	return nil
+}
+
+func (iu *ItemUseCase) GetCache(ctx context.Context, key string) ([]byte, error) {
+	b, err := iu.cache.Get(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("ItemsUseCase - GetCache - iu.cache.Get: %w", err)
+	}
+	return b, nil
+}
+
+func (iu *ItemUseCase) InvalidateCache(ctx context.Context, key string) error {
+	err := iu.cache.Invalidate(ctx, key)
+	if err != nil {
+		return fmt.Errorf("ItemsUseCase - InvalidateCache - iu.cache.Invalidate: %w", err)
+	}
+	return nil
 }
