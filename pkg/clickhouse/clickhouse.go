@@ -14,7 +14,7 @@ type Clickhouse struct {
 }
 
 func New(ch *config.ClickHouse) (*Clickhouse, error) {
-	// sleep for waiting clickhouse entrypoint.sh script did its job to create user
+	// sleep for waiting clickhouse entrypoint.sh script did its job to create user and db 'hezzl'
 	time.Sleep(5 * time.Second)
 
 	db := clickhouse.OpenDB(&clickhouse.Options{

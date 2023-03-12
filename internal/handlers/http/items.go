@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
+	"strconv"
 
 	valid "github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/logger"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase"
 	"go.uber.org/zap"
 )
@@ -21,7 +24,9 @@ func newItemRoutes(handler *gin.RouterGroup, t usecase.Item, l *logger.Logger) {
 	h := handler.Group("/items")
 	{
 		h.GET("/list", r.get)
-		//h.POST("/create:campaignId", r.post)
+		h.POST("/create", r.post)
+		h.DELETE("/remove", r.delete)
+		h.PATCH("/update", r.update)
 	}
 }
 
@@ -48,37 +53,146 @@ func (r *createItemRequest) validate() error {
 	return err
 }
 
-//post handler
-// func (r *ItemsRoutes) post(c *gin.Context) {
-// 	var req createItemRequest
-// 	err := c.ShouldBindJSON(&req)
-// 	if err != nil {
-// 		r.l.L.Error("http  - post - c.ShouldBindJSON", zap.Error(err))
-// 		errorResponse(c, http.StatusBadRequest, "bad request")
-// 		return
-// 	}
+// post handler
+func (r *ItemsRoutes) post(c *gin.Context) {
+	var req createItemRequest
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		r.l.L.Error("http  - post - c.ShouldBindJSON", zap.Error(err))
+		errorResponse(c, http.StatusBadRequest, "bad request")
+		return
+	}
 
-// 	err = req.validate()
-// 	if err != nil {
-// 		r.l.L.Error("http  - post - dto.validate()", zap.Error(err))
-// 		errorResponse(c, http.StatusBadRequest, "invalid request")
-// 		return
-// 	}
+	err = req.validate()
+	if err != nil {
+		r.l.L.Error("http  - post - dto.validate()", zap.Error(err))
+		errorResponse(c, http.StatusBadRequest, "invalid request")
+		return
+	}
 
-// 	campaignIDstr := c.Param("campaignId")
-// 	campaignID, err := strconv.Atoi(campaignIDstr)
-// 	if err != nil {
-// 		r.l.L.Error("http  - post - strconvAtoi", zap.Error(err))
-// 		errorResponse(c, http.StatusBadRequest, "invalid request")
-// 		return
-// 	}
+	campaignIDstr := c.Param("campaignId")
+	campaignID, err := strconv.Atoi(campaignIDstr)
+	if err != nil {
+		r.l.L.Error("http  - post - strconvAtoi", zap.Error(err))
+		errorResponse(c, http.StatusBadRequest, "invalid request")
+		return
+	}
 
-// 	newItem := models.Item{
-// 		CampainID: campaignID,
-// 		Name:      req.Name,
-// 	}
+	newItem := models.Item{
+		CampainID: campaignID,
+		Name:      req.Name,
+	}
 
-// 	item, err := r.i.Save(c.Request.Context(), newItem)
+	item, err := r.i.Save(c.Request.Context(), &newItem)
+	if err != nil {
+		r.l.L.Error("http  - post - r.i.Save", zap.Error(err))
+		errorResponse(c, http.StatusInternalServerError, "internal error")
+		return
+	}
 
-// 	c.JSON(http.StatusOK, item)
-// }
+	c.JSON(http.StatusOK, item)
+}
+
+type deleteResponse struct {
+	ID         int  `json:"id"`
+	CampaignID int  `json:"campaign_id"`
+	Removed    bool `json:"removed"`
+}
+
+// delete handler
+func (r *ItemsRoutes) delete(c *gin.Context) {
+	campaignIDstr := c.Param("campaignId")
+	campaignID, err := strconv.Atoi(campaignIDstr)
+	if err != nil {
+		r.l.L.Error("http  - delete - campaignId -  strconvAtoi", zap.Error(err))
+		errorResponse(c, http.StatusBadRequest, "invalid request")
+		return
+	}
+
+	IDstr := c.Param("id")
+	id, err := strconv.Atoi(IDstr)
+	if err != nil {
+		r.l.L.Error("http  - delete - id - strconvAtoi", zap.Error(err))
+		errorResponse(c, http.StatusBadRequest, "invalid request")
+		return
+	}
+
+	isDeleted, err := r.i.Delete(c.Request.Context(), id, campaignID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			r.l.L.Error("http  - delete - r.i.Delete - sql.ErrNoRows", zap.Error(err))
+			c.JSON(http.StatusOK, "item was not found")
+		} else {
+			r.l.L.Error("http  - delete - r.i.Delete", zap.Error(err))
+			errorResponse(c, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, deleteResponse{
+		ID:         id,
+		CampaignID: campaignID,
+		Removed:    isDeleted,
+	})
+}
+
+type updateRequest struct {
+	Name        string `json:"name" valid:",required"`
+	Description string `json:"description" valid:",required"`
+}
+
+// validate update request
+func (r *updateRequest) validate() error {
+	_, err := valid.ValidateStruct(r)
+	return err
+}
+
+// update handler
+func (r *ItemsRoutes) update(c *gin.Context) {
+	campaignIDstr := c.Param("campaignId")
+	campaignID, err := strconv.Atoi(campaignIDstr)
+	if err != nil {
+		r.l.L.Error("http  - delete - campaignId -  strconvAtoi", zap.Error(err))
+		errorResponse(c, http.StatusBadRequest, "invalid request")
+		return
+	}
+
+	IDstr := c.Param("id")
+	id, err := strconv.Atoi(IDstr)
+	if err != nil {
+		r.l.L.Error("http  - delete - id - strconvAtoi", zap.Error(err))
+		errorResponse(c, http.StatusBadRequest, "invalid request")
+		return
+	}
+
+	var dto updateRequest
+
+	err = c.ShouldBindJSON(&dto)
+	if err != nil {
+		r.l.L.Error("http  - update - c.ShouldBindJSON", zap.Error(err))
+		errorResponse(c, http.StatusBadRequest, "bad request")
+		return
+	}
+
+	item := &models.Item{
+		ID:          id,
+		CampainID:   campaignID,
+		Name:        dto.Name,
+		Description: dto.Description,
+	}
+
+	item, err = r.i.Update(c.Request.Context(), item)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			r.l.L.Error("http  - update - r.i.Update - sql.ErrNoRows", zap.Error(err))
+			c.JSON(http.StatusOK, "item was not found")
+		} else {
+			r.l.L.Error("http  - delete - r.i.Update", zap.Error(err))
+			errorResponse(c, http.StatusInternalServerError, "internal error")
+			return
+		}
+
+	}
+
+	c.JSON(http.StatusOK, item)
+}
