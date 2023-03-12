@@ -30,6 +30,9 @@ func New(url string) (*Postgres, error) {
 	}
 
 	err = pg.Pool.Ping(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("postgres - NewPostgres - pgxpool.Ping: %w", err)
+	}
 
 	return pg, nil
 }

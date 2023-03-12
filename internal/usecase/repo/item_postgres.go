@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hezzl_task5/internal/models"
-	"github.com/hezzl_task5/pkg/postgres"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
+	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/postgres"
 )
 
 type ItemsRepo struct {
@@ -46,6 +46,6 @@ func (r *ItemsRepo) GetItems(ctx context.Context) ([]models.Item, error) {
 	return items, nil
 }
 
-func (r *ItemsRepo) SaveItem(ctx context.Context, name string) (models.Item, error) {
-	sql, _, err := r.Builder.Insert("items").Columns("")
-}
+// func (r *ItemsRepo) SaveItem(ctx context.Context, name string) (models.Item, error) {
+// 	sql, _, err := r.Builder.Insert("items").Columns("")
+// }

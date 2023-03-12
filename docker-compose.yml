@@ -15,12 +15,29 @@ services:
     network_mode: host
   
   clickhouse:
-      image: yandex/clickhouse-server
+      image: clickhouse/clickhouse-server
       ports:
       - "8123:8123"
+      - "9000:9000"
+      environment:
+        CLICKHOUSE_DB: 'hezzl'
+        CLICKHOUSE_USER: 'user'
+        CLICKHOUSE_PASSWORD: 'password'
       volumes:
-      - ./db:/var/lib/clickhouse
+      - ch-data:/var/lib/clickhouse
       network_mode: host
+  
+  redis:
+    image: "redis"
+    ports:
+      - "6379:6379"
+    volumes: 
+      - cache:/data
+    environment:
+        REDIS_PASSWORD: 'hezzl'
+    command: /bin/sh -c "redis-server --requirepass $$REDIS_PASSWORD"
+    network_mode: host
+    
   app:
     build:
       context: .
@@ -32,6 +49,12 @@ services:
       - 8080:8080
     depends_on:
       - postgres
+      - clickhouse
+      - redis
     network_mode: host
 volumes:
     pg-data:
+    ch-data: 
+    cache:
+    
+

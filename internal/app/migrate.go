@@ -6,17 +6,14 @@ import (
 	"fmt"
 	"time"
 
-	// migrate tools
-
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
+
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/hezzl_task5/config"
-	"github.com/hezzl_task5/internal/logger"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/logger"
 	_ "github.com/jackc/pgx/v4/stdlib"
 
-	_ "github.com/ClickHouse/clickhouse-go"
-	chm "github.com/golang-migrate/migrate/v4/database/clickhouse"
+	"github.com/golang-migrate/migrate/v4/database/clickhouse"
 )
 
 const (
@@ -69,32 +66,14 @@ func migratePostgres(databaseURL string, l *logger.Logger) error {
 	return nil
 }
 
-func clickhouseConnectionString(host, port, engine string) string {
-	if engine != "" {
-		return fmt.Sprintf(
-			"clickhouse://%v:%v?username=user&password=password&database=db&x-multi-statement=true&x-migrations-table-engine=%v&debug=false",
-			host, port, engine)
-	}
+func migrateClickhouse(db *sql.DB, l *logger.Logger) error {
 
-	return fmt.Sprintf(
-		"clickhouse://%v:%v?username=user&password=password&database=db&x-multi-statement=true&debug=false",
-		host, port)
-}
-
-func migrateClickhouse(ch *config.ClickHouse, l *logger.Logger) error {
-	addr := clickhouseConnectionString(ch.Host, ch.Port, "")
-	conn, err := sql.Open("clickhouse", addr)
-	if err != nil {
-		return fmt.Errorf("app - migrateClickHouse - sql.Open :%w", err)
-	}
-	defer conn.Close()
-
-	d, err := chm.WithInstance(conn, &chm.Config{})
+	d, err := clickhouse.WithInstance(db, &clickhouse.Config{})
 	if err != nil {
 		return fmt.Errorf("app - migrateClickHouse - clickhouse.WithInstance :%w", err)
 	}
 
-	m, err := migrate.NewWithDatabaseInstance("file:///migrations/clickhouse", "db", d)
+	m, err := migrate.NewWithDatabaseInstance("file:///migrations/clickhouse", "clickhouse", d)
 
 	if err != nil {
 		return fmt.Errorf("app - migrateClickHouse - migrate.NewWithDatabaseInstance :%w", err)

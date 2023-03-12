@@ -1,5 +1,5 @@
 app:
-  name: 'hezzl_task5'
+  name: 'iamthe1whoknocks/hezzl_test_task'
   version: '1.0.0'
 
 http:
@@ -14,7 +14,13 @@ postgres:
 
 clickhouse:
   ch_host: 'localhost'
-  ch_port: '8123'
+  ch_port: '9000'
   db_name: 'hezzl'
-  username: 'default' ## move to env
-  password: 'default' ## move to env
+  username: 'user' ## move to env
+  password: 'password' ## move to env
+  engine: ''
+
+redis:
+  redis_host: 'localhost'
+  redis_port: '6379'
+  redis_password: 'hezzl' ## move to env

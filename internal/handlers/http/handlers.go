@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/hezzl_task5/internal/logger"
-	"github.com/hezzl_task5/internal/usecase"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/logger"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase"
 )
 
 func NewRouter(handler *gin.Engine, i usecase.Item, l *logger.Logger) {

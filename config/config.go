@@ -14,6 +14,7 @@ type (
 		Log        `yaml:"logger"`
 		PG         `yaml:"postgres"`
 		ClickHouse `yaml:"clickhouse"`
+		Redis      `yaml:"redis"`
 	}
 
 	// app
@@ -44,6 +45,14 @@ type (
 		DbName   string `yaml:"db_name"`
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`
+		Engine   string `yaml:"engine"`
+	}
+
+	// redis
+	Redis struct {
+		Host     string `yaml:"redis_host"`
+		Port     string `yaml:"redis_port"`
+		Password string `yaml:"redis_password"`
 	}
 )
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hezzl_task5/internal/models"
-	"github.com/hezzl_task5/internal/usecase/repo"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase/repo"
 )
 
 type ItemUseCase struct {
@@ -26,10 +26,10 @@ func (iu *ItemUseCase) Get(ctx context.Context) ([]models.Item, error) {
 	return items, nil
 }
 
-func (iu *ItemUseCase) Save(ctx context.Context, name string) (models.Item, error) {
-	item, err := iu.repo.SaveItem(ctx, name)
-	if err != nil {
-		return models.Item{}, fmt.Errorf("ItemsUseCase - Save - iu.repo.SaveItem")
-	}
-	return item, nil
-}
+// func (iu *ItemUseCase) Save(ctx context.Context, name string) (models.Item, error) {
+// 	item, err := iu.repo.SaveItem(ctx, name)
+// 	if err != nil {
+// 		return models.Item{}, fmt.Errorf("ItemsUseCase - Save - iu.repo.SaveItem")
+// 	}
+// 	return item, nil
+// }

@@ -6,20 +6,44 @@ import (
 	"syscall"
 
 	"github.com/gin-gonic/gin"
-	"github.com/hezzl_task5/config"
-	handlers "github.com/hezzl_task5/internal/handlers/http"
-	"github.com/hezzl_task5/internal/logger"
-	"github.com/hezzl_task5/internal/usecase"
-	"github.com/hezzl_task5/internal/usecase/repo"
-	"github.com/hezzl_task5/pkg/clickhouse"
-	"github.com/hezzl_task5/pkg/httpserver"
-	"github.com/hezzl_task5/pkg/postgres"
+	"github.com/iamthe1whoknocks/hezzl_test_task/config"
+	handlers "github.com/iamthe1whoknocks/hezzl_test_task/internal/handlers/http"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/logger"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase/repo"
+	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/clickhouse"
+	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/httpserver"
+	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/postgres"
+	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/redis"
 	"go.uber.org/zap"
 )
 
 // Run creates objects via constructors.
 func Run(cfg *config.Config) {
 	l := logger.Set(cfg.Log.Level)
+
+	// redis
+	redis, err := redis.New(&cfg.Redis)
+	if err != nil {
+		l.L.Sugar().Fatalf("app - Run - redis.New: %w", err)
+	}
+	defer redis.Client.Close()
+
+	l.L.Info("redis db started")
+
+	// clickhouse
+	ch, err := clickhouse.New(&cfg.ClickHouse)
+	if err != nil {
+		l.L.Sugar().Fatalf("app - Run - clickhouse.New: %w", err)
+	}
+	defer ch.DB.Close()
+
+	l.L.Info("clickhouse db started")
+
+	err = migrateClickhouse(ch.DB, l)
+	if err != nil {
+		l.L.Fatal("app - Run - migrateClickHouse", zap.Error(err))
+	}
 
 	// postgres
 	pg, err := postgres.New(cfg.PG.URL)
@@ -28,21 +52,11 @@ func Run(cfg *config.Config) {
 	}
 	defer pg.Pool.Close()
 
+	l.L.Info("postgres db started")
+
 	err = migratePostgres(cfg.PG.URL, l)
 	if err != nil {
 		l.L.Fatal("app - Run - migratePostgres", zap.Error(err))
-	}
-
-	// clickhouse
-	ch, err := clickhouse.New(&cfg.ClickHouse)
-	if err != nil {
-		l.L.Sugar().Fatalf("app - Run - clickhouse.New: %w", err)
-	}
-	defer ch.Conn.Close()
-
-	err = migrateClickhouse(&cfg.ClickHouse, l)
-	if err != nil {
-		l.L.Fatal("app - Run - migrateClickHouse", zap.Error(err))
 	}
 
 	// Use case

@@ -1,0 +1,1 @@
+ALTER TABLE items DROP INDEX IF EXISTS items_id_idx;

@@ -1,20 +1,23 @@
 package clickhouse
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/hezzl_task5/config"
+	"github.com/iamthe1whoknocks/hezzl_test_task/config"
 )
 
 type Clickhouse struct {
-	Conn driver.Conn
+	DB *sql.DB
 }
 
 func New(ch *config.ClickHouse) (*Clickhouse, error) {
-	conn, err := clickhouse.Open(&clickhouse.Options{
+	// sleep for waiting clickhouse entrypoint.sh script did its job to create user
+	time.Sleep(5 * time.Second)
+
+	db := clickhouse.OpenDB(&clickhouse.Options{
 		Addr: []string{fmt.Sprintf("%s:%s", ch.Host, ch.Port)},
 		Auth: clickhouse.Auth{
 			Database: ch.DbName,
@@ -22,16 +25,10 @@ func New(ch *config.ClickHouse) (*Clickhouse, error) {
 			Password: ch.Password,
 		},
 	})
+	err := db.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("clickhouse - NewClikcHouse - clikchouse.Open: %w", err)
-	}
-	err = conn.Ping(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("clickhouse - NewClickHouse - conn.Ping: %w", err)
+		return nil, fmt.Errorf("clickhouse - NewClickHouse - db.Ping: %s", err)
 	}
 
-	return &Clickhouse{
-		Conn: conn,
-	}, nil
-
+	return &Clickhouse{DB: db}, nil
 }

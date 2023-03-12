@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/hezzl_task5/config"
-	"github.com/hezzl_task5/internal/app"
+	"github.com/iamthe1whoknocks/hezzl_test_task/config"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/app"
 )
 
 func main() {
