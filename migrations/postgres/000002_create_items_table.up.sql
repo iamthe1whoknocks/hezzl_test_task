@@ -15,7 +15,7 @@ drop index if exists items_id_idx;
 create unique index if not exists items_id_idx on items (id);
 
 drop index if exists items_campaign_id_idx;
-create unique index if not exists items_campaign_id_idx on items (campaign_id);
+create  index if not exists items_campaign_id_idx on items (campaign_id);
 
 drop index if exists items_name_idx;
-create unique index if not exists items_name_idx on items (name);
+create  index if not exists items_name_idx on items (name);

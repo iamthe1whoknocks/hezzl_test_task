@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"database/sql"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -10,6 +10,7 @@ import (
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/logger"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase"
+	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 )
 
@@ -36,6 +37,11 @@ func (r *ItemsRoutes) get(c *gin.Context) {
 	if err != nil {
 		r.l.L.Error("http  - get", zap.Error(err))
 		errorResponse(c, http.StatusInternalServerError, "database problems")
+		return
+	}
+
+	if len(items) == 0 {
+		c.JSON(http.StatusOK, "items list is empty")
 		return
 	}
 
@@ -70,7 +76,7 @@ func (r *ItemsRoutes) post(c *gin.Context) {
 		return
 	}
 
-	campaignIDstr := c.Param("campaignId")
+	campaignIDstr := c.Query("campaignId")
 	campaignID, err := strconv.Atoi(campaignIDstr)
 	if err != nil {
 		r.l.L.Error("http  - post - strconvAtoi", zap.Error(err))
@@ -101,7 +107,7 @@ type deleteResponse struct {
 
 // delete handler
 func (r *ItemsRoutes) delete(c *gin.Context) {
-	campaignIDstr := c.Param("campaignId")
+	campaignIDstr := c.Query("campaignId")
 	campaignID, err := strconv.Atoi(campaignIDstr)
 	if err != nil {
 		r.l.L.Error("http  - delete - campaignId -  strconvAtoi", zap.Error(err))
@@ -109,7 +115,7 @@ func (r *ItemsRoutes) delete(c *gin.Context) {
 		return
 	}
 
-	IDstr := c.Param("id")
+	IDstr := c.Query("id")
 	id, err := strconv.Atoi(IDstr)
 	if err != nil {
 		r.l.L.Error("http  - delete - id - strconvAtoi", zap.Error(err))
@@ -119,9 +125,10 @@ func (r *ItemsRoutes) delete(c *gin.Context) {
 
 	isDeleted, err := r.i.Delete(c.Request.Context(), id, campaignID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Unwrap(err) == pgx.ErrNoRows {
 			r.l.L.Error("http  - delete - r.i.Delete - sql.ErrNoRows", zap.Error(err))
 			c.JSON(http.StatusOK, "item was not found")
+			return
 		} else {
 			r.l.L.Error("http  - delete - r.i.Delete", zap.Error(err))
 			errorResponse(c, http.StatusInternalServerError, "internal error")
@@ -138,7 +145,7 @@ func (r *ItemsRoutes) delete(c *gin.Context) {
 
 type updateRequest struct {
 	Name        string `json:"name" valid:",required"`
-	Description string `json:"description" valid:",required"`
+	Description string `json:"description"`
 }
 
 // validate update request
@@ -149,7 +156,7 @@ func (r *updateRequest) validate() error {
 
 // update handler
 func (r *ItemsRoutes) update(c *gin.Context) {
-	campaignIDstr := c.Param("campaignId")
+	campaignIDstr := c.Query("campaignId")
 	campaignID, err := strconv.Atoi(campaignIDstr)
 	if err != nil {
 		r.l.L.Error("http  - delete - campaignId -  strconvAtoi", zap.Error(err))
@@ -157,7 +164,7 @@ func (r *ItemsRoutes) update(c *gin.Context) {
 		return
 	}
 
-	IDstr := c.Param("id")
+	IDstr := c.Query("id")
 	id, err := strconv.Atoi(IDstr)
 	if err != nil {
 		r.l.L.Error("http  - delete - id - strconvAtoi", zap.Error(err))
@@ -174,6 +181,13 @@ func (r *ItemsRoutes) update(c *gin.Context) {
 		return
 	}
 
+	err = dto.validate()
+	if err != nil {
+		r.l.L.Error("http  - update - dto.validate()", zap.Error(err))
+		errorResponse(c, http.StatusBadRequest, "bad request")
+		return
+	}
+
 	item := &models.Item{
 		ID:          id,
 		CampainID:   campaignID,
@@ -183,11 +197,12 @@ func (r *ItemsRoutes) update(c *gin.Context) {
 
 	item, err = r.i.Update(c.Request.Context(), item)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Unwrap(err) == pgx.ErrNoRows {
 			r.l.L.Error("http  - update - r.i.Update - sql.ErrNoRows", zap.Error(err))
 			c.JSON(http.StatusOK, "item was not found")
+			return
 		} else {
-			r.l.L.Error("http  - delete - r.i.Update", zap.Error(err))
+			r.l.L.Error("http  - update - r.i.Update", zap.Error(err))
 			errorResponse(c, http.StatusInternalServerError, "internal error")
 			return
 		}

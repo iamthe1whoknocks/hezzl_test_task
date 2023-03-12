@@ -61,7 +61,7 @@ func Run(cfg *config.Config) {
 
 	// Use case
 	ItemsUseCase := usecase.New(
-		repo.New(pg),
+		repo.New(pg, l.L),
 	)
 
 	// HTTP Server

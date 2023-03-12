@@ -2,21 +2,24 @@ package repo
 
 import (
 	"context"
-	sq "database/sql"
 	"fmt"
 	"time"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
 	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/postgres"
+	"go.uber.org/zap"
 )
 
 type ItemsRepo struct {
 	*postgres.Postgres
+	Logger *zap.Logger
 }
 
-func New(pg *postgres.Postgres) ItemsRepo {
-	return ItemsRepo{pg}
+func New(pg *postgres.Postgres, logger *zap.Logger) ItemsRepo {
+	return ItemsRepo{pg, logger}
 }
 
 func (r *ItemsRepo) GetItems(ctx context.Context) ([]models.Item, error) {
@@ -50,9 +53,11 @@ func (r *ItemsRepo) GetItems(ctx context.Context) ([]models.Item, error) {
 }
 
 func (r *ItemsRepo) SaveItem(ctx context.Context, item *models.Item) (*models.Item, error) {
-	sql, _, err := r.Builder.Insert("items").
+	creationTime := time.Now()
+
+	sql, args, err := r.Builder.Insert("items").
 		Columns("campaign_id,name,description,removed,created_at").
-		Values(item.CampainID, item.Name, fmt.Sprintf("description of %s", item.Name), false, time.Now()).
+		Values(item.CampainID, item.Name, fmt.Sprintf("description of %s", item.Name), false, creationTime).
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("ItemsRepo - SaveItem - r.Builder insert: %w", err)
@@ -64,32 +69,34 @@ func (r *ItemsRepo) SaveItem(ctx context.Context, item *models.Item) (*models.It
 
 	defer tx.Rollback(ctx)
 
-	_, err = tx.Exec(ctx, sql)
+	_, err = tx.Exec(ctx, sql, args...)
 	if err != nil {
 		return nil, fmt.Errorf("ItemsRepo - SaveItem - tx.Exec insert: %w", err)
 	}
 
 	var i models.Item
 
-	sql, _, err = r.Builder.
+	sql, args, err = r.Builder.
 		Select("id,campaign_id,name,description,priority,removed,created_at").
 		From("items").
-		Where(squirrel.Eq{"id": item.ID, "campaign_id": item.CampainID}).
+		Where(squirrel.Eq{"created_at": creationTime, "campaign_id": item.CampainID, "name": item.Name}).
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("ItemsRepo - SaveItem - r.Builder select: %w", err)
 	}
 
-	err = tx.QueryRow(ctx, sql).Scan(&i.ID, &i.CampainID, &i.Name, &i.Description, &i.Priority, &i.Removed, &i.CreatedAt)
+	//r.Logger.Debug("ItemsRepo - SaveItem - tx.QueryRow - sql", zap.String("sql", sql), zap.Any("args", args))
+
+	err = tx.QueryRow(ctx, sql, args...).Scan(&i.ID, &i.CampainID, &i.Name, &i.Description, &i.Priority, &i.Removed, &i.CreatedAt)
 	if err != nil {
-		return nil, fmt.Errorf("ItemsRepo - SaveItem - tx.QueryRow: %w", err)
+		return nil, fmt.Errorf("ItemsRepo - SaveItem - tx.QueryRow - Scan: %w", err)
 	}
 	tx.Commit(ctx)
 	return &i, nil
 }
 
 func (r *ItemsRepo) DeleteItem(ctx context.Context, id, campaignID int) (bool, error) {
-	sql, _, err := r.Builder.
+	sql, args, err := r.Builder.
 		Select("id,campaign_id,name,description,priority,removed,created_at").
 		From("items").
 		Where(squirrel.Eq{"id": id, "campaign_id": campaignID}).Suffix("FOR UPDATE").
@@ -107,24 +114,23 @@ func (r *ItemsRepo) DeleteItem(ctx context.Context, id, campaignID int) (bool, e
 
 	var i models.Item
 
-	err = tx.QueryRow(ctx, sql).
+	err = tx.QueryRow(ctx, sql, args...).
 		Scan(&i.ID, &i.CampainID, &i.Name, &i.Description, &i.Priority, &i.Removed, &i.CreatedAt)
-
-	if err == sq.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		return false, err
 	} else if err != nil {
 		return false, fmt.Errorf("ItemsRepo - DeleteItem - tx.QueryRow: %w", err)
 	}
 
-	sql, _, err = r.Builder.Update("items").
-		Set("removed", false).
+	sql, args, err = r.Builder.Update("items").
+		Set("removed", true).
 		Where(squirrel.Eq{"id": id, "campaign_id": campaignID}).
 		ToSql()
 	if err != nil {
 		return false, fmt.Errorf("ItemsRepo - SaveItem - r.Builder update: %w", err)
 	}
 
-	_, err = tx.Exec(ctx, sql)
+	_, err = tx.Exec(ctx, sql, args...)
 	if err != nil {
 		return false, fmt.Errorf("ItemsRepo - SaveItem - tx.Exec: %w", err)
 	}
@@ -135,7 +141,7 @@ func (r *ItemsRepo) DeleteItem(ctx context.Context, id, campaignID int) (bool, e
 }
 
 func (r *ItemsRepo) UpdateItem(ctx context.Context, item *models.Item) (*models.Item, error) {
-	sql, _, err := r.Builder.
+	sql, args, err := r.Builder.
 		Select("id,campaign_id,name,description,priority,removed,created_at").
 		From("items").
 		Where(squirrel.Eq{"id": item.ID, "campaign_id": item.CampainID}).Suffix("FOR UPDATE").
@@ -153,27 +159,26 @@ func (r *ItemsRepo) UpdateItem(ctx context.Context, item *models.Item) (*models.
 
 	var i models.Item
 
-	err = tx.QueryRow(ctx, sql).
+	err = tx.QueryRow(ctx, sql, args...).
 		Scan(&i.ID, &i.CampainID, &i.Name, &i.Description, &i.Priority, &i.Removed, &i.CreatedAt)
-
-	if err == sq.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		return nil, err
 	} else if err != nil {
-		return nil, fmt.Errorf("ItemsRepo - DeleteItem - tx.QueryRow: %w", err)
+		return nil, fmt.Errorf("ItemsRepo - UpdateItem - tx.QueryRow: %w", err)
 	}
 
-	sql, _, err = r.Builder.Update("items").
+	sql, args, err = r.Builder.Update("items").
 		Set("name", item.Name).
 		Set("description", item.Description).
 		Where(squirrel.Eq{"id": item.ID, "campaign_id": item.CampainID}).
 		ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("ItemsRepo - SaveItem - r.Builder update: %w", err)
+		return nil, fmt.Errorf("ItemsRepo - UpdateItem - r.Builder update: %w", err)
 	}
 
-	_, err = tx.Exec(ctx, sql)
+	_, err = tx.Exec(ctx, sql, args...)
 	if err != nil {
-		return nil, fmt.Errorf("ItemsRepo - SaveItem - tx.Exec: %w", err)
+		return nil, fmt.Errorf("ItemsRepo - UpdateItem - tx.Exec: %w", err)
 	}
 
 	tx.Commit(ctx)
