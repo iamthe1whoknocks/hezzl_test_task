@@ -1,3 +1,4 @@
+// for clickhouse connection
 package clickhouse
 
 import (

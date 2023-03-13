@@ -10,19 +10,16 @@ logger:
 
 postgres:
   pool_max: 2
-  pg_url: 'postgres://user:pass@localhost:5432/postgres' ## move to env
 
 clickhouse:
   ch_host: 'localhost'
   ch_port: '9000'
   db_name: 'hezzl'
-  username: 'user' ## move to env
-  password: 'password' ## move to env
+  username: 'user' 
   engine: ''
 
 redis:
   redis_host: 'localhost'
   redis_port: '6379'
-  redis_password: 'hezzl' ## move to env
   redis_db: 0
   redis_ttl: 60

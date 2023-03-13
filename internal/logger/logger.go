@@ -6,10 +6,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// logger struct
 type Logger struct {
 	L *zap.Logger
 }
 
+// set logger
 func Set(mode string) *Logger {
 	var (
 		l   *zap.Logger

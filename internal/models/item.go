@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// item
 type Item struct {
 	ID          int       `json:"id" valid:",required"`
 	CampainID   int       `json:"campain_id" valid:",required"`

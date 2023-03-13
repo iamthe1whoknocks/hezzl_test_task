@@ -1,3 +1,4 @@
+// methods for postgres
 package repo
 
 import (
@@ -13,6 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// items repo struct
 type ItemsRepo struct {
 	*postgres.Postgres
 	Logger *zap.Logger

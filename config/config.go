@@ -36,7 +36,7 @@ type (
 	// postgres
 	PG struct {
 		PoolMax int    `yaml:"pool_max"`
-		URL     string `yaml:"pg_url"`
+		URL     string `yaml:"pg_url" env:"PG_URL"`
 	}
 	// clickhouse
 	ClickHouse struct {
@@ -44,7 +44,7 @@ type (
 		Port     string `yaml:"ch_port"`
 		DbName   string `yaml:"db_name"`
 		Username string `yaml:"username"`
-		Password string `yaml:"password"`
+		Password string `yaml:"password" env:"CLICKHOUSE_PASSWORD"`
 		Engine   string `yaml:"engine"`
 	}
 
@@ -52,7 +52,7 @@ type (
 	Redis struct {
 		Host     string `yaml:"redis_host"`
 		Port     string `yaml:"redis_port"`
-		Password string `yaml:"redis_password"`
+		Password string `yaml:"redis_password" env:"REDIS_PASSWORD"`
 		DB       int    `yaml:"redis_db"`
 		TTL      int    `yaml:"redis_ttl"`
 	}

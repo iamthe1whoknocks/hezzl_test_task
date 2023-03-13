@@ -21,6 +21,7 @@ const (
 	_defaultTimeout  = time.Second
 )
 
+// migrate postgres
 func migratePostgres(databaseURL string, l *logger.Logger) error {
 	if len(databaseURL) == 0 {
 		return fmt.Errorf("app - migratePostgres - empty url")
@@ -66,6 +67,7 @@ func migratePostgres(databaseURL string, l *logger.Logger) error {
 	return nil
 }
 
+// migrate clickhouse
 func migrateClickhouse(db *sql.DB, l *logger.Logger) error {
 
 	d, err := clickhouse.WithInstance(db, &clickhouse.Config{})

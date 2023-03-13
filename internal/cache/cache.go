@@ -9,6 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// Cache struct
 type Cache struct {
 	Client *redis.Client
 	Config *config.Redis
@@ -21,6 +22,7 @@ func New(client *redis.Client, cfg *config.Redis) *Cache {
 	}
 }
 
+// set cache
 func (c *Cache) Set(ctx context.Context, key string, value []byte) error {
 	err := c.Client.Set(ctx, key, value, time.Duration(c.Config.TTL)*time.Second).Err()
 	if err != nil {
@@ -29,6 +31,7 @@ func (c *Cache) Set(ctx context.Context, key string, value []byte) error {
 	return nil
 }
 
+// get cache
 func (c *Cache) Get(ctx context.Context, key string) ([]byte, error) {
 	b, err := c.Client.Get(ctx, key).Bytes()
 	if err != nil {
@@ -37,6 +40,7 @@ func (c *Cache) Get(ctx context.Context, key string) ([]byte, error) {
 	return b, nil
 }
 
+// invalidate cache
 func (c *Cache) Invalidate(ctx context.Context, key string) error {
 	err := c.Client.Del(ctx, key).Err()
 	if err != nil {

@@ -1,3 +1,4 @@
+// busyness logic interfaces
 package usecase
 
 import (
