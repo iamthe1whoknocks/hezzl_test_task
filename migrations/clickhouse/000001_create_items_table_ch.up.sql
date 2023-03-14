@@ -10,3 +10,4 @@ CREATE TABLE IF NOT EXISTS items(
 ENGINE=MergeTree()
 PRIMARY KEY (id,event_time);
 
+

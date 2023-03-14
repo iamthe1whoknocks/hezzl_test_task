@@ -3,6 +3,7 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
@@ -10,14 +11,16 @@ import (
 )
 
 type ItemUseCase struct {
-	repo  repo.ItemsRepo
-	cache Cacher
+	repo   repo.ItemsRepo
+	cache  Cacher
+	broker Broker
 }
 
-func New(r repo.ItemsRepo, c Cacher) *ItemUseCase {
+func New(r repo.ItemsRepo, c Cacher, b Broker) *ItemUseCase {
 	return &ItemUseCase{
-		repo:  r,
-		cache: c,
+		repo:   r,
+		cache:  c,
+		broker: b,
 	}
 }
 
@@ -34,6 +37,17 @@ func (iu *ItemUseCase) Save(ctx context.Context, item *models.Item) (*models.Ite
 	if err != nil {
 		return nil, fmt.Errorf("ItemsUseCase - Save - iu.repo.SaveItem : %w", err)
 	}
+
+	data, err := json.Marshal(item)
+	if err != nil {
+		return nil, fmt.Errorf("ItemsUseCase - Save - Marshal : %w", err)
+	}
+
+	err = iu.broker.Publish(ctx, iu.broker.GetSubject(), data)
+	if err != nil {
+		return nil, fmt.Errorf("ItemsUseCase - Save - Publish : %w", err)
+	}
+
 	return item, nil
 }
 
@@ -41,6 +55,21 @@ func (iu *ItemUseCase) Delete(ctx context.Context, id, campaignID int) (bool, er
 	isDeleted, err := iu.repo.DeleteItem(ctx, id, campaignID)
 	if err != nil {
 		return false, fmt.Errorf("ItemsUseCase - Delete - iu.repo.DeleteItem : %w", err)
+	}
+
+	data, err := json.Marshal(models.Item{
+		ID:        id,
+		CampainID: campaignID,
+		Removed:   isDeleted,
+	})
+
+	if err != nil {
+		return false, fmt.Errorf("ItemsUseCase - Delete - Marshal : %w", err)
+	}
+
+	err = iu.broker.Publish(ctx, iu.broker.GetSubject(), data)
+	if err != nil {
+		return false, fmt.Errorf("ItemsUseCase - Delete - Publish : %w", err)
 	}
 	return isDeleted, nil
 }
@@ -50,6 +79,17 @@ func (iu *ItemUseCase) Update(ctx context.Context, item *models.Item) (*models.I
 	if err != nil {
 		return nil, fmt.Errorf("ItemsUseCase - Save - iu.repo.SaveItem : %w", err)
 	}
+
+	data, err := json.Marshal(item)
+	if err != nil {
+		return nil, fmt.Errorf("ItemsUseCase - Save - Marshal : %w", err)
+	}
+
+	err = iu.broker.Publish(ctx, iu.broker.GetSubject(), data)
+	if err != nil {
+		return nil, fmt.Errorf("ItemsUseCase - Save - Publish : %w", err)
+	}
+
 	return item, nil
 }
 

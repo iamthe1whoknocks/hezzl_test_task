@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,18 +11,29 @@ import (
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/cache"
 	handlers "github.com/iamthe1whoknocks/hezzl_test_task/internal/handlers/http"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/logger"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase"
+	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase/broker"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase/repo"
 	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/clickhouse"
 	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/httpserver"
+	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/nats"
 	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/postgres"
 	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/redis"
+	natsgo "github.com/nats-io/nats.go"
 	"go.uber.org/zap"
 )
 
 // Run creates objects via constructors.
 func Run(cfg *config.Config) {
 	l := logger.Set(cfg.Log.Level)
+
+	// nats
+	nats, err := nats.New(&cfg.Nats)
+	if err != nil {
+		l.L.Sugar().Fatalf("app - Run - nats.New: %w", err)
+	}
+	defer nats.Conn.Close()
 
 	// redis
 	redis, err := redis.New(&cfg.Redis)
@@ -64,7 +76,20 @@ func Run(cfg *config.Config) {
 	ItemsUseCase := usecase.New(
 		repo.New(pg, l.L),
 		cache.New(redis.Client, &cfg.Redis),
+		broker.New(nats.Conn, &cfg.Nats, l.L),
 	)
+
+	//todo: for tests only
+	go func() {
+		nats.Conn.Subscribe(cfg.Nats.Topic, func(m *natsgo.Msg) {
+			l.L.Sugar().Debugf("Received a message: %s\n", string(m.Data))
+			item := models.Item{}
+			err := json.Unmarshal(m.Data, &item)
+			if err != nil {
+				l.L.Error("app - Subscriber - Unmarshal", zap.String("msg", string(m.Data)), zap.Error(err))
+			}
+		})
+	}()
 
 	// HTTP Server
 	handler := gin.New()

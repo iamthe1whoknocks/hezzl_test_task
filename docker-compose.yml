@@ -37,6 +37,15 @@ services:
         REDIS_PASSWORD: 'hezzl'
     command: /bin/sh -c "redis-server --requirepass $$REDIS_PASSWORD"
     network_mode: host
+
+  nats:
+    # https://hub.docker.com/_/nats/
+    image: nats
+    ports:
+    - 4222:4222
+    - 8222:8222
+    - 6222:6222
+    network_mode: host
     
   app:
     build:
@@ -53,6 +62,7 @@ services:
       - postgres
       - clickhouse
       - redis
+      - nats
     network_mode: host
 volumes:
     pg-data:

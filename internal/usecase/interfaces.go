@@ -33,4 +33,10 @@ type (
 		Get(ctx context.Context, key string) ([]byte, error)
 		Invalidate(ctx context.Context, key string) error
 	}
+
+	// Broker
+	Broker interface {
+		Publish(context.Context, string, []byte) error
+		GetSubject() string
+	}
 )

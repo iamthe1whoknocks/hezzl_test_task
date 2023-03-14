@@ -15,6 +15,7 @@ type (
 		PG         `yaml:"postgres"`
 		ClickHouse `yaml:"clickhouse"`
 		Redis      `yaml:"redis"`
+		Nats       `yaml:"nats"`
 	}
 
 	// app
@@ -55,6 +56,14 @@ type (
 		Password string `yaml:"redis_password" env:"REDIS_PASSWORD"`
 		DB       int    `yaml:"redis_db"`
 		TTL      int    `yaml:"redis_ttl"`
+	}
+
+	// nats
+	Nats struct {
+		Host       string `yaml:"host"`
+		Port       string `yaml:"port"`
+		Topic      string `yaml:"topic"`
+		BatchCount int    `yaml:"batch_count"`
 	}
 )
 
