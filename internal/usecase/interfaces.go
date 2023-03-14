@@ -38,5 +38,6 @@ type (
 	Broker interface {
 		Publish(context.Context, string, []byte) error
 		GetSubject() string
+		Subscriber()
 	}
 )

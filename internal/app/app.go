@@ -49,7 +49,6 @@ func Run(cfg *config.Config) {
 	if err != nil {
 		l.L.Sugar().Fatalf("app - Run - clickhouse.New: %w", err)
 	}
-	defer ch.DB.Close()
 
 	l.L.Info("clickhouse db started")
 
@@ -72,11 +71,13 @@ func Run(cfg *config.Config) {
 		l.L.Fatal("app - Run - migratePostgres", zap.Error(err))
 	}
 
+	broker := broker.New(nats.Conn, &cfg.Nats, l.L, ch.DB)
+
 	// Use case
 	ItemsUseCase := usecase.New(
 		repo.New(pg, l.L),
 		cache.New(redis.Client, &cfg.Redis),
-		broker.New(nats.Conn, &cfg.Nats, l.L),
+		broker,
 	)
 
 	//todo: for tests only
