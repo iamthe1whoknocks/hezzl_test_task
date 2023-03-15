@@ -90,6 +90,9 @@ func (r *ItemsRepo) SaveItem(ctx context.Context, item *models.Item) (*models.It
 	//r.Logger.Debug("ItemsRepo - SaveItem - tx.QueryRow - sql", zap.String("sql", sql), zap.Any("args", args))
 
 	err = tx.QueryRow(ctx, sql, args...).Scan(&i.ID, &i.CampainID, &i.Name, &i.Description, &i.Priority, &i.Removed, &i.CreatedAt)
+	if err == pgx.ErrNoRows {
+		return nil, err
+	}
 	if err != nil {
 		return nil, fmt.Errorf("ItemsRepo - SaveItem - tx.QueryRow - Scan: %w", err)
 	}

@@ -122,7 +122,11 @@ func (r *ItemsRoutes) post(c *gin.Context) {
 	}
 
 	item, err := r.i.Save(c.Request.Context(), &newItem)
-	if err != nil {
+	if errors.Unwrap(err) == pgx.ErrNoRows {
+		r.l.L.Error("http  - post - r.i.Save - sql.ErrNoRows", zap.Error(err))
+		c.JSON(http.StatusBadRequest, "invalid request")
+		return
+	} else if err != nil {
 		r.l.L.Error("http  - post - r.i.Save", zap.Error(err))
 		errorResponse(c, http.StatusInternalServerError, "internal error")
 		return
