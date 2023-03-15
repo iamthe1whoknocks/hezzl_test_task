@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	valid "github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
@@ -122,11 +123,12 @@ func (r *ItemsRoutes) post(c *gin.Context) {
 	}
 
 	item, err := r.i.Save(c.Request.Context(), &newItem)
-	if errors.Unwrap(err) == pgx.ErrNoRows {
-		r.l.L.Error("http  - post - r.i.Save - sql.ErrNoRows", zap.Error(err))
-		c.JSON(http.StatusBadRequest, "invalid request")
-		return
-	} else if err != nil {
+	if err != nil {
+		if strings.Contains(err.Error(), "violates foreign key constraint") {
+			r.l.L.Error("http  - post - r.i.Save - foreign key constraint", zap.Error(err))
+			errorResponse(c, http.StatusBadRequest, "bad request")
+			return
+		}
 		r.l.L.Error("http  - post - r.i.Save", zap.Error(err))
 		errorResponse(c, http.StatusInternalServerError, "internal error")
 		return
