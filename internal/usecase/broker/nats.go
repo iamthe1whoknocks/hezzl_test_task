@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"sync"
 
 	"github.com/iamthe1whoknocks/hezzl_test_task/config"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
@@ -16,6 +17,7 @@ type Broker struct {
 	Conn       *nats.Conn
 	Config     *config.Nats
 	Logger     *zap.Logger
+	Mu         *sync.Mutex
 	ItemsBatch []*models.Item
 	DB         *sql.DB
 }
@@ -26,7 +28,9 @@ func New(conn *nats.Conn, cfg *config.Nats, logger *zap.Logger, db *sql.DB) *Bro
 		Conn:       conn,
 		Config:     cfg,
 		Logger:     logger,
-		ItemsBatch: make([]*models.Item, 0),
+		Mu:         new(sync.Mutex),
+		ItemsBatch: make([]*models.Item, 0, cfg.BatchCount),
+		DB:         db,
 	}
 }
 
@@ -51,9 +55,13 @@ func (b *Broker) Subscriber() {
 			b.Logger.Error("app - Subscriber - Unmarshal", zap.String("msg", string(m.Data)), zap.Error(err))
 			return
 		}
+		b.Mu.Lock()
+		defer b.Mu.Unlock()
 		b.ItemsBatch = append(b.ItemsBatch, &item)
+		b.Logger.Debug("app - broker - subscribe", zap.Int("batch len", len(b.ItemsBatch)), zap.String("msg", item.Name))
 
 		if len(b.ItemsBatch) == b.Config.BatchCount {
+			b.Logger.Debug("app - broker - subscribe - sending", zap.Int("batch len", len(b.ItemsBatch)), zap.String("msg", item.Name))
 			tx, err := b.DB.Begin()
 			if err != nil {
 				b.Logger.Error("app - Subscriber - Begin", zap.String("msg", string(m.Data)), zap.Error(err))
@@ -66,11 +74,12 @@ func (b *Broker) Subscriber() {
 				return
 			}
 			for _, i := range b.ItemsBatch {
-				_, err := batch.Exec(i.ID,
-					i.CampainID,
+				_, err := batch.Exec(
+					uint32(i.ID),
+					uint32(i.CampainID),
 					i.Name,
 					i.Description,
-					i.Priority,
+					uint32(i.Priority),
 					i.Removed,
 					i.CreatedAt)
 
@@ -83,6 +92,13 @@ func (b *Broker) Subscriber() {
 			if err != nil {
 				b.Logger.Error("app - Subscriber - Commit", zap.Error(err))
 			}
+
+			//clear batch
+			b.ItemsBatch = nil
+		}
+		m.Reply = "msg accepted"
+		if err := m.Ack(); err != nil {
+			b.Logger.Error("app - Subscriber - Ack", zap.Error(err))
 		}
 	})
 }

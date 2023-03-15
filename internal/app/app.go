@@ -1,7 +1,6 @@
 package app
 
 import (
-	"encoding/json"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,7 +10,6 @@ import (
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/cache"
 	handlers "github.com/iamthe1whoknocks/hezzl_test_task/internal/handlers/http"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/logger"
-	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase/broker"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase/repo"
@@ -20,7 +18,6 @@ import (
 	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/nats"
 	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/postgres"
 	"github.com/iamthe1whoknocks/hezzl_test_task/pkg/redis"
-	natsgo "github.com/nats-io/nats.go"
 	"go.uber.org/zap"
 )
 
@@ -80,17 +77,8 @@ func Run(cfg *config.Config) {
 		broker,
 	)
 
-	//todo: for tests only
-	go func() {
-		nats.Conn.Subscribe(cfg.Nats.Topic, func(m *natsgo.Msg) {
-			l.L.Sugar().Debugf("Received a message: %s\n", string(m.Data))
-			item := models.Item{}
-			err := json.Unmarshal(m.Data, &item)
-			if err != nil {
-				l.L.Error("app - Subscriber - Unmarshal", zap.String("msg", string(m.Data)), zap.Error(err))
-			}
-		})
-	}()
+	// start subscibing and sending logs to clickhouse
+	go broker.Subscriber()
 
 	// HTTP Server
 	handler := gin.New()

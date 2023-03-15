@@ -34,7 +34,7 @@ func migratePostgres(databaseURL string, l *logger.Logger) error {
 		return fmt.Errorf("app - migratePostgres - sql.Open : %w", err)
 	}
 
-	defer db.Close()
+	//defer db.Close()
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
@@ -86,7 +86,7 @@ func migrateClickhouse(db *sql.DB, l *logger.Logger) error {
 	}
 
 	err = m.Up()
-	defer m.Close()
+	//defer m.Close()
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return fmt.Errorf("app - migrateClickHouse - migrate.Up : %w", err)
 	}

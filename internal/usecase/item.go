@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase/repo"
@@ -61,6 +62,7 @@ func (iu *ItemUseCase) Delete(ctx context.Context, id, campaignID int) (bool, er
 		ID:        id,
 		CampainID: campaignID,
 		Removed:   isDeleted,
+		CreatedAt: time.Now(), //done for simplicity
 	})
 
 	if err != nil {
