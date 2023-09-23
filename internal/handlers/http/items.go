@@ -33,9 +33,8 @@ func newItemRoutes(handler *gin.RouterGroup, t usecase.Item, l *logger.Logger) {
 	}
 }
 
-// get handler
+// get handler.
 func (r *ItemsRoutes) get(c *gin.Context) {
-
 	// find items in cache
 	b, err := r.i.GetCache(c.Request.Context(), "get")
 	if err == nil && b != nil {
@@ -70,7 +69,7 @@ func (r *ItemsRoutes) get(c *gin.Context) {
 		return
 	}
 
-	// key is the same because our get method lists all items, not by one
+	// key is the same because our get method lists all items, not by one.
 	err = r.i.SetCache(c.Request.Context(), "get", b)
 	if err != nil {
 		r.l.L.Error("http  - get - SetCache", zap.Error(err))
@@ -81,18 +80,18 @@ func (r *ItemsRoutes) get(c *gin.Context) {
 	c.JSON(http.StatusOK, items)
 }
 
-// request for post method
+// request for post method.
 type createItemRequest struct {
 	Name string `json:"name" valid:",required"`
 }
 
-// validate create item request
+// validate create item request.
 func (r *createItemRequest) validate() error {
 	_, err := valid.ValidateStruct(r)
 	return err
 }
 
-// post handler
+// post handler.
 func (r *ItemsRoutes) post(c *gin.Context) {
 	var req createItemRequest
 	err := c.ShouldBindJSON(&req)
@@ -117,7 +116,7 @@ func (r *ItemsRoutes) post(c *gin.Context) {
 		return
 	}
 
-	newItem := models.Item{
+	newItem := models.Item{ //nolint:exhaustruct // struct to unmarshal
 		CampainID: campaignID,
 		Name:      req.Name,
 	}
@@ -150,7 +149,7 @@ type deleteResponse struct {
 	Removed    bool `json:"removed"`
 }
 
-// delete handler
+// delete handler.
 func (r *ItemsRoutes) delete(c *gin.Context) {
 	campaignIDstr := c.Query("campaignId")
 	campaignID, err := strconv.Atoi(campaignIDstr)
@@ -160,8 +159,8 @@ func (r *ItemsRoutes) delete(c *gin.Context) {
 		return
 	}
 
-	IDstr := c.Query("id")
-	id, err := strconv.Atoi(IDstr)
+	idStr := c.Query("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		r.l.L.Error("http  - delete - id - strconvAtoi", zap.Error(err))
 		errorResponse(c, http.StatusBadRequest, "invalid request")
@@ -170,15 +169,14 @@ func (r *ItemsRoutes) delete(c *gin.Context) {
 
 	isDeleted, err := r.i.Delete(c.Request.Context(), id, campaignID)
 	if err != nil {
-		if errors.Unwrap(err) == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			r.l.L.Error("http  - delete - r.i.Delete - sql.ErrNoRows", zap.Error(err))
 			c.JSON(http.StatusOK, "item was not found")
 			return
-		} else {
-			r.l.L.Error("http  - delete - r.i.Delete", zap.Error(err))
-			errorResponse(c, http.StatusInternalServerError, "internal error")
-			return
 		}
+		r.l.L.Error("http  - delete - r.i.Delete", zap.Error(err))
+		errorResponse(c, http.StatusInternalServerError, "internal error")
+		return
 	}
 
 	err = r.i.InvalidateCache(c.Request.Context(), "get")
@@ -200,13 +198,13 @@ type updateRequest struct {
 	Description string `json:"description"`
 }
 
-// validate update request
+// validate update request.
 func (r *updateRequest) validate() error {
 	_, err := valid.ValidateStruct(r)
 	return err
 }
 
-// update handler
+// update handler.
 func (r *ItemsRoutes) update(c *gin.Context) {
 	campaignIDstr := c.Query("campaignId")
 	campaignID, err := strconv.Atoi(campaignIDstr)
@@ -216,8 +214,8 @@ func (r *ItemsRoutes) update(c *gin.Context) {
 		return
 	}
 
-	IDstr := c.Query("id")
-	id, err := strconv.Atoi(IDstr)
+	idStr := c.Query("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		r.l.L.Error("http  - delete - id - strconvAtoi", zap.Error(err))
 		errorResponse(c, http.StatusBadRequest, "invalid request")
@@ -240,7 +238,7 @@ func (r *ItemsRoutes) update(c *gin.Context) {
 		return
 	}
 
-	item := &models.Item{
+	item := &models.Item{ //nolint:exhaustruct // struct to unmarshal
 		ID:          id,
 		CampainID:   campaignID,
 		Name:        dto.Name,
@@ -249,16 +247,14 @@ func (r *ItemsRoutes) update(c *gin.Context) {
 
 	item, err = r.i.Update(c.Request.Context(), item)
 	if err != nil {
-		if errors.Unwrap(err) == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			r.l.L.Error("http  - update - r.i.Update - sql.ErrNoRows", zap.Error(err))
 			c.JSON(http.StatusOK, "item was not found")
 			return
-		} else {
-			r.l.L.Error("http  - update - r.i.Update", zap.Error(err))
-			errorResponse(c, http.StatusInternalServerError, "internal error")
-			return
 		}
-
+		r.l.L.Error("http  - update - r.i.Update", zap.Error(err))
+		errorResponse(c, http.StatusInternalServerError, "internal error")
+		return
 	}
 
 	err = r.i.InvalidateCache(c.Request.Context(), "get")

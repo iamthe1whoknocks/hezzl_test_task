@@ -8,7 +8,7 @@ import (
 )
 
 type (
-	// Item
+	// Item.
 	Item interface {
 		Get(context.Context) ([]models.Item, error)
 		Save(context.Context, *models.Item) (*models.Item, error)
@@ -19,7 +19,7 @@ type (
 		InvalidateCache(ctx context.Context, key string) error
 	}
 
-	// ItemRepo
+	// ItemRepo.
 	ItemsRepo interface {
 		GetItems(context.Context) ([]models.Item, error)
 		SaveItem(context.Context, *models.Item) (*models.Item, error)
@@ -27,17 +27,17 @@ type (
 		UpdateItem(context.Context, *models.Item) (*models.Item, error)
 	}
 
-	// Cache
+	// Cache.
 	Cacher interface {
 		Set(ctx context.Context, key string, value []byte) error
 		Get(ctx context.Context, key string) ([]byte, error)
 		Invalidate(ctx context.Context, key string) error
 	}
 
-	// Broker
+	// Broker.
 	Broker interface {
-		Publish(context.Context, string, []byte) error
+		Publish(string, []byte) error
 		GetSubject() string
-		Subscriber()
+		Subscriber() error
 	}
 )

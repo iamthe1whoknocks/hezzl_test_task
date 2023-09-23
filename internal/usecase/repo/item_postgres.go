@@ -1,8 +1,9 @@
-// methods for postgres
+// methods for postgres.
 package repo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// items repo struct
+// items repo struct.
 type ItemsRepo struct {
 	*postgres.Postgres
 	Logger *zap.Logger
@@ -39,10 +40,10 @@ func (r *ItemsRepo) GetItems(ctx context.Context) ([]models.Item, error) {
 	}
 	defer rows.Close()
 
-	items := make([]models.Item, 0, 0)
+	items := make([]models.Item, 0, 0) //nolint:gosimple // avoid redundant alloc
 
 	for rows.Next() {
-		i := models.Item{}
+		i := models.Item{} //nolint:exhaustruct // struct to scan
 
 		err = rows.Scan(&i.ID, &i.CampainID, &i.Name, &i.Description, &i.Priority, &i.Removed, &i.CreatedAt)
 		if err != nil {
@@ -69,8 +70,9 @@ func (r *ItemsRepo) SaveItem(ctx context.Context, item *models.Item) (*models.It
 		return nil, fmt.Errorf("ItemsRepo - SaveItem - r.Pool.Begin: %w", err)
 	}
 
-	defer tx.Rollback(ctx)
-
+	defer func() {
+		err = tx.Rollback(ctx)
+	}()
 	_, err = tx.Exec(ctx, sql, args...)
 	if err != nil {
 		return nil, fmt.Errorf("ItemsRepo - SaveItem - tx.Exec insert: %w", err)
@@ -87,17 +89,17 @@ func (r *ItemsRepo) SaveItem(ctx context.Context, item *models.Item) (*models.It
 		return nil, fmt.Errorf("ItemsRepo - SaveItem - r.Builder select: %w", err)
 	}
 
-	//r.Logger.Debug("ItemsRepo - SaveItem - tx.QueryRow - sql", zap.String("sql", sql), zap.Any("args", args))
+	// r.Logger.Debug("ItemsRepo - SaveItem - tx.QueryRow - sql", zap.String("sql", sql), zap.Any("args", args))
 
-	err = tx.QueryRow(ctx, sql, args...).Scan(&i.ID, &i.CampainID, &i.Name, &i.Description, &i.Priority, &i.Removed, &i.CreatedAt)
-	if err == pgx.ErrNoRows {
+	err = tx.QueryRow(ctx, sql, args...).Scan(&i.ID, &i.CampainID, &i.Name, &i.Description, &i.Priority, &i.Removed, &i.CreatedAt) //nolint:lll /// scan
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
 	}
 	if err != nil {
 		return nil, fmt.Errorf("ItemsRepo - SaveItem - tx.QueryRow - Scan: %w", err)
 	}
-	tx.Commit(ctx)
-	return &i, nil
+	err = tx.Commit(ctx)
+	return &i, err
 }
 
 func (r *ItemsRepo) DeleteItem(ctx context.Context, id, campaignID int) (bool, error) {
@@ -115,13 +117,14 @@ func (r *ItemsRepo) DeleteItem(ctx context.Context, id, campaignID int) (bool, e
 		return false, fmt.Errorf("ItemsRepo - DeleteItem - r.Pool.Begin: %w", err)
 	}
 
-	defer tx.Rollback(ctx)
-
+	defer func() {
+		err = tx.Rollback(ctx)
+	}()
 	var i models.Item
 
 	err = tx.QueryRow(ctx, sql, args...).
 		Scan(&i.ID, &i.CampainID, &i.Name, &i.Description, &i.Priority, &i.Removed, &i.CreatedAt)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return false, err
 	} else if err != nil {
 		return false, fmt.Errorf("ItemsRepo - DeleteItem - tx.QueryRow: %w", err)
@@ -139,10 +142,9 @@ func (r *ItemsRepo) DeleteItem(ctx context.Context, id, campaignID int) (bool, e
 	if err != nil {
 		return false, fmt.Errorf("ItemsRepo - SaveItem - tx.Exec: %w", err)
 	}
-	tx.Commit(ctx)
+	err = tx.Commit(ctx)
 
-	return true, nil
-
+	return true, err
 }
 
 func (r *ItemsRepo) UpdateItem(ctx context.Context, item *models.Item) (*models.Item, error) {
@@ -160,13 +162,18 @@ func (r *ItemsRepo) UpdateItem(ctx context.Context, item *models.Item) (*models.
 		return nil, fmt.Errorf("ItemsRepo - UpdateItem - r.Pool.Begin: %w", err)
 	}
 
-	defer tx.Rollback(ctx)
+	defer func() {
+		err = tx.Rollback(ctx)
+		if err != nil {
+			err = fmt.Errorf("ItemsRepo - UpdateItem - tx.Rollback: %w", err)
+		}
+	}()
 
 	var i models.Item
 
 	err = tx.QueryRow(ctx, sql, args...).
 		Scan(&i.ID, &i.CampainID, &i.Name, &i.Description, &i.Priority, &i.Removed, &i.CreatedAt)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
 	} else if err != nil {
 		return nil, fmt.Errorf("ItemsRepo - UpdateItem - tx.QueryRow: %w", err)
@@ -186,11 +193,13 @@ func (r *ItemsRepo) UpdateItem(ctx context.Context, item *models.Item) (*models.
 		return nil, fmt.Errorf("ItemsRepo - UpdateItem - tx.Exec: %w", err)
 	}
 
-	tx.Commit(ctx)
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ItemsRepo - UpdateItem - tx.Commit: %w", err)
+	}
 
 	i.Name = item.Name
 	i.Description = item.Description
 
 	return &i, nil
-
 }

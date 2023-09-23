@@ -1,6 +1,6 @@
 package redis
 
-//redis connection
+// redis connection.
 import (
 	"context"
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Redis struct
+// Redis struct.
 type Redis struct {
 	Client *redis.Client
 }
@@ -28,5 +28,4 @@ func New(rc *config.Redis) (*Redis, error) {
 	return &Redis{
 		Client: client,
 	}, nil
-
 }

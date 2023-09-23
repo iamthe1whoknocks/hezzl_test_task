@@ -44,7 +44,7 @@ func (iu *ItemUseCase) Save(ctx context.Context, item *models.Item) (*models.Ite
 		return nil, fmt.Errorf("ItemsUseCase - Save - Marshal : %w", err)
 	}
 
-	err = iu.broker.Publish(ctx, iu.broker.GetSubject(), data)
+	err = iu.broker.Publish(iu.broker.GetSubject(), data)
 	if err != nil {
 		return nil, fmt.Errorf("ItemsUseCase - Save - Publish : %w", err)
 	}
@@ -58,18 +58,18 @@ func (iu *ItemUseCase) Delete(ctx context.Context, id, campaignID int) (bool, er
 		return false, fmt.Errorf("ItemsUseCase - Delete - iu.repo.DeleteItem : %w", err)
 	}
 
-	data, err := json.Marshal(models.Item{
+	data, err := json.Marshal(models.Item{ //nolint:exhaustruct // struct to marshal
 		ID:        id,
 		CampainID: campaignID,
 		Removed:   isDeleted,
-		CreatedAt: time.Now(), //done for simplicity
+		CreatedAt: time.Now(), // done for simplicity
 	})
 
 	if err != nil {
 		return false, fmt.Errorf("ItemsUseCase - Delete - Marshal : %w", err)
 	}
 
-	err = iu.broker.Publish(ctx, iu.broker.GetSubject(), data)
+	err = iu.broker.Publish(iu.broker.GetSubject(), data)
 	if err != nil {
 		return false, fmt.Errorf("ItemsUseCase - Delete - Publish : %w", err)
 	}
@@ -87,7 +87,7 @@ func (iu *ItemUseCase) Update(ctx context.Context, item *models.Item) (*models.I
 		return nil, fmt.Errorf("ItemsUseCase - Save - Marshal : %w", err)
 	}
 
-	err = iu.broker.Publish(ctx, iu.broker.GetSubject(), data)
+	err = iu.broker.Publish(iu.broker.GetSubject(), data)
 	if err != nil {
 		return nil, fmt.Errorf("ItemsUseCase - Save - Publish : %w", err)
 	}

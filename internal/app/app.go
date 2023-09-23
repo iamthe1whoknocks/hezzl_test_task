@@ -71,18 +71,22 @@ func Run(cfg *config.Config) {
 	broker := broker.New(nats.Conn, &cfg.Nats, l.L, ch.DB)
 
 	// Use case
-	ItemsUseCase := usecase.New(
+	itemsUseCase := usecase.New(
 		repo.New(pg, l.L),
 		cache.New(redis.Client, &cfg.Redis),
 		broker,
 	)
 
-	// start subscibing and sending logs to clickhouse
-	go broker.Subscriber()
-
+	// start subscibing and sending logs to clickhouse.
+	go func() {
+		err = broker.Subscriber()
+		if err != nil {
+			l.L.Fatal("app - Run - broker.Subscriber()", zap.Error(err))
+		}
+	}()
 	// HTTP Server
 	handler := gin.New()
-	handlers.NewRouter(handler, ItemsUseCase, l)
+	handlers.NewRouter(handler, itemsUseCase, l)
 	httpServer := httpserver.New(handler, cfg.HTTP.Port)
 
 	// Waiting signal

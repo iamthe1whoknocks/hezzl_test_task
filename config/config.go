@@ -18,38 +18,38 @@ type (
 		Nats       `yaml:"nats"`
 	}
 
-	// app
+	// app.
 	App struct {
 		Name    string `yaml:"name"`
 		Version string `yaml:"version"`
 	}
 
-	// http
+	// http.
 	HTTP struct {
 		Port string `yaml:"port"`
 	}
 
-	// log
+	// log.
 	Log struct {
 		Level string `yaml:"log_level"`
 	}
 
-	// postgres
+	// postgres.
 	PG struct {
 		PoolMax int    `yaml:"pool_max"`
 		URL     string `yaml:"pg_url" env:"PG_URL"`
 	}
-	// clickhouse
+	// clickhouse.
 	ClickHouse struct {
 		Host     string `yaml:"ch_host"`
 		Port     string `yaml:"ch_port"`
-		DbName   string `yaml:"db_name"`
+		DBName   string `yaml:"db_name"`
 		Username string `yaml:"username"`
 		Password string `yaml:"password" env:"CLICKHOUSE_PASSWORD"`
 		Engine   string `yaml:"engine"`
 	}
 
-	// redis
+	// redis.
 	Redis struct {
 		Host     string `yaml:"redis_host"`
 		Port     string `yaml:"redis_port"`
@@ -58,7 +58,7 @@ type (
 		TTL      int    `yaml:"redis_ttl"`
 	}
 
-	// nats
+	// nats.
 	Nats struct {
 		Host       string `yaml:"host"`
 		Port       string `yaml:"port"`
@@ -67,9 +67,9 @@ type (
 	}
 )
 
-// get config from specified yml file
+// get config from specified yml file.
 func NewConfig() (*Config, error) {
-	cfg := &Config{}
+	cfg := &Config{} //nolint:exhaustruct // struct to unmarshal
 
 	err := cleanenv.ReadConfig("../../config/config.yml", cfg)
 	if err != nil {
