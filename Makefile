@@ -13,3 +13,7 @@ down:
 ## watch logs
 logs:
 	docker-compose logs -f
+
+### check by golangci linter
+linter-golangci: 
+	golangci-lint run --config=.golangci.yml ./...
