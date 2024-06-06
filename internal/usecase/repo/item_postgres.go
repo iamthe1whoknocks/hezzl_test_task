@@ -21,8 +21,8 @@ type ItemsRepo struct {
 	Logger *zap.Logger
 }
 
-func New(pg *postgres.Postgres, logger *zap.Logger) ItemsRepo {
-	return ItemsRepo{pg, logger}
+func New(pg *postgres.Postgres, logger *zap.Logger) *ItemsRepo {
+	return &ItemsRepo{pg, logger}
 }
 
 func (r *ItemsRepo) GetItems(ctx context.Context) ([]models.Item, error) {
@@ -135,12 +135,12 @@ func (r *ItemsRepo) DeleteItem(ctx context.Context, id, campaignID int) (bool, e
 		Where(squirrel.Eq{"id": id, "campaign_id": campaignID}).
 		ToSql()
 	if err != nil {
-		return false, fmt.Errorf("ItemsRepo - SaveItem - r.Builder update: %w", err)
+		return false, fmt.Errorf("ItemsRepo - DeleteItem - r.Builder update: %w", err)
 	}
 
 	_, err = tx.Exec(ctx, sql, args...)
 	if err != nil {
-		return false, fmt.Errorf("ItemsRepo - SaveItem - tx.Exec: %w", err)
+		return false, fmt.Errorf("ItemsRepo - DeleteItem - tx.Exec: %w", err)
 	}
 	err = tx.Commit(ctx)
 

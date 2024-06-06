@@ -1,6 +1,3 @@
-## build app
-service: 
-	go mod tidy && go mod download && go run ./cmd/app
 
 ## run docker-compose
 up:
@@ -17,3 +14,9 @@ logs:
 ### check by golangci linter
 linter-golangci: 
 	golangci-lint run --config=.golangci.yml ./...
+
+mock:
+	mockgen -source ./internal/usecase/interfaces.go -package usecase_test > ./internal/usecase/mock_test.go
+
+unit-test:
+	go test -v -cover -race ./internal/...

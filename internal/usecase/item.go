@@ -5,19 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/iamthe1whoknocks/hezzl_test_task/internal/models"
-	"github.com/iamthe1whoknocks/hezzl_test_task/internal/usecase/repo"
 )
 
 type ItemUseCase struct {
-	repo   repo.ItemsRepo
+	repo   ItemsRepo
 	cache  Cacher
 	broker Broker
 }
 
-func New(r repo.ItemsRepo, c Cacher, b Broker) *ItemUseCase {
+func New(r ItemsRepo, c Cacher, b Broker) *ItemUseCase {
 	return &ItemUseCase{
 		repo:   r,
 		cache:  c,
@@ -62,7 +60,6 @@ func (iu *ItemUseCase) Delete(ctx context.Context, id, campaignID int) (bool, er
 		ID:        id,
 		CampainID: campaignID,
 		Removed:   isDeleted,
-		CreatedAt: time.Now(), // done for simplicity
 	})
 
 	if err != nil {
